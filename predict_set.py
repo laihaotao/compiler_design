@@ -8,9 +8,8 @@ non_terminals = set()
 
 # the collection of rule
 #  key[string]: the left hand side of the production
-#  value[string]: the right hand side of the prodcution
+#  value[list of string]: the right hand side of the prodcution
 rules = {}
-START_SYMBOL = ''
 
 first_sets  = {}
 follow_sets = {}
@@ -34,7 +33,8 @@ def split_production(production_str):
     return prods_
 
 
-def construct(file_path, start_symbol,debug=False):
+def construct(file_path, start_symbol, debug=False):
+    global START_SYMBOL
     START_SYMBOL = start_symbol
     with open(file_path, 'r') as f:
         for line in f.readlines():
@@ -53,12 +53,15 @@ def construct(file_path, start_symbol,debug=False):
                 production_str = parts[1]
                 prods = split_production(production_str)
                 rules[key] = list(prods)
-        
+    # remove EPSILON from the nonterminal
+    non_terminals.remove('EPSILON')
+
     print('total number of rule: {}'.format(str(len(rules))))
     print('total number of nonterminal: {}'.format(str(len(non_terminals))))
     print('total number of terminal: {}'.format(str(len(terminals))))
 
     if debug:
+        print('rules:\n {} \n'.format(rules))
         print('nonterminals:\n {} \n'.format(non_terminals))
         print('terminals:\n {} \n'.format(terminals))
 
@@ -99,6 +102,19 @@ def first_of(symbol):
     first_sets[symbol] = first
     return first
 
+
+def get_prod_with_rhs(symbol):
+    prods = {}
+    for lhs, rhs in rules.items():
+        for production in rhs:
+            for term in production:
+                if term == symbol and term not in prods:
+                    prods[lhs] = list(production)
+                elif term == symbol and term in prods:
+                    prods[lhs].append(production)
+    return prods
+
+
 def follow_of(symbol):
     # if already built
     if symbol in follow_sets:
@@ -107,17 +123,45 @@ def follow_of(symbol):
     follow = follow_sets[symbol] = set()
     if symbol == START_SYMBOL:
         follow_sets[symbol].add('$')
-        return follow_sets[symbol]
-
     
+    prods_with_sym = get_prod_with_rhs(symbol)
+    for key, prods in prods_with_sym.items():
+        symbol_idx = prods.index(symbol)
+        follow_idx = symbol_idx + 1
 
+        while True:
+            if follow_idx == len(prods):
+                if key != symbol:
+                    follow = follow.union(follow_of(key))
+                break
+        
+            follow_symbol = prods[follow_idx]
+            first_of_follow = first_of(follow_symbol)
 
+            if  'EPSILON' not in first_of_follow:
+                follow = follow.union(first_of_follow)
+                break
+            
+            # first_of_follow.add('EPSILON')
+            follow = follow.union(first_of_follow)
+            follow.remove('EPSILON')
+            follow_idx += 1
+
+    follow_sets[symbol] = follow
+    return follow
 
 if __name__ == "__main__":
     # file_path = './working_grammar.txt'
+    # construct(file_path, 'S', debug=True)
+
     file_path = './simple_grammar.txt'
-    construct(file_path, debug=True)
-    nt = ['E', 'EPrime', 'T', 'TPrime', 'F']
-    for n in nt:
+    construct(file_path, 'E', debug=False)
+    
+    for n in non_terminals:
         s = first_of(n)
         print('first set of {}: {}'.format(n, s))
+        
+    for n in non_terminals:
+        f = follow_of(n)
+        print('follow set of {}: {}'.format(n, f))
+
