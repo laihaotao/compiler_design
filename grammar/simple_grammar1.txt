@@ -1,0 +1,5 @@
+E           -> T EPrime
+EPrime      -> EPSILON | '+' T EPrime
+T           -> F TPrime
+TPrime      -> EPSILON | '*' F TPrime
+F           -> '(' E ')' | '0' | '1'

@@ -1,0 +1,4 @@
+E -> T X
+T -> '(' E ')' | 'int' Y
+X -> '+' E | EPSILON
+Y -> '*' T | EPSILON

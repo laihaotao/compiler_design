@@ -1,0 +1,5 @@
+E       -> T EPrime
+EPrime  -> '+' T EPrime | EPSILON
+T       -> F TPrime
+TPrime  -> '*' F TPrime | EPSILON
+F       -> '(' E ')' | 'id'

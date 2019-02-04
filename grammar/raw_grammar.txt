@@ -1,0 +1,41 @@
+prog            -> {classDecl} {funcDef} 'main' funcBody ';'
+classDecl       -> 'class' 'id' [':' 'id' {',' 'id'}] '{' {varDecl} {funcDecl} '}' ';'
+funcDecl        -> type 'id' '(' fParams ')' ';'
+funcHead        -> type ['id' 'sr'] 'id' '(' fParams ')'
+funcDef         -> funcHead funcBody ';'
+funcBody        -> '{' {varDecl} {statement} '}'
+varDecl         -> type 'id' {arraySize} ';'
+statement       -> assignStat ';'
+                 | 'if' '(' expr ')' 'then' statBlock 'else' statBlock ';'
+                 | 'for' '(' type 'id' assignOp expr ';' relExpr ';' assignStat ')' statBlock ';'
+                 | 'read' '(' variable ')' ';'
+                 | 'write' '(' expr ')' ';'
+                 | 'return' '(' expr ')' ';'
+assignStat      -> variable assignOp expr
+statBlock       -> '{' {statement} '}' | statement | EPSILON
+expr            -> arithExpr | relExpr
+relExpr         -> arithExpr relOp arithExpr
+arithExpr       -> arithExpr addOp term | term
+sign            -> '+' | '-'
+term            -> term multOp factor | factor
+factor          -> variable
+                 | functionCall
+                 | 'intNum' | 'floatNum'
+                 | '(' arithExpr ')'
+                 | 'not' factor
+                 | sign factor
+variable        -> {idnest} 'id' {indice}
+functionCall    -> {idnest} 'id' '(' aParams ')'
+idnest          -> 'id' {indice} '.'
+                 | 'id' '(' aParams ')' '.'
+indice          -> '[' arithExpr ']'
+arraySize       -> '[' 'intNum' ']'
+type            -> 'integer' | 'float' | 'id'
+fParams         -> type 'id' {arraySize} {fParamsTail} | EPSILON
+aParams         -> expr {aParamsTail} | EPSILON
+fParamsTail     -> ',' type 'id' {arraySize}
+aParamsTail     -> ',' expr
+assignOp        -> '='
+relOp           -> 'eq' | 'neq' | 'lt' | 'gt' | 'leq' | 'geq'
+addOp           -> '+' | '-' | 'or'
+multOp          -> '*' | '/' | 'and' 
