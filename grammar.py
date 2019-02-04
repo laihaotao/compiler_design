@@ -17,12 +17,13 @@ class Production(object):
 class Grammar(object):
 
     def __init__(self, file_path, start_symbol):
-        self.productions = {}
-        self.terminals = set()
+        self.productions  = {}
+        self.terminals    = set()
         self.nonterminals = set()
         self.start_symbol = start_symbol
-        self.first_sets = {}
-        self.follow_sets = {}
+        self.first_sets   = {}
+        self.follow_sets  = {}
+        self.table        = {}
         self._construct(file_path)
 
     def summary(self):
@@ -81,6 +82,8 @@ class Grammar(object):
             self.first_of(t)
         for nt in self.nonterminals:
             self.first_of(nt)
+        for t in self.terminals:
+            self.follow_of(t)
         for nt in self.nonterminals:
             self.follow_of(nt)
 
@@ -124,14 +127,6 @@ class Grammar(object):
                         res = self.can_derive_epsilon_(term, visited)
                         if res:
                             return True
-        return False
-
-    @staticmethod
-    def production_contains_epsilon(production):
-        rhs_ = production.rhs
-        for term in rhs_:
-            if term == 'EPSILON':
-                return True
         return False
 
     def first_of(self, symbol):
@@ -205,8 +200,45 @@ class Grammar(object):
         self.follow_sets[symbol] = follow
         return follow
 
+    def first_of_prod_rhs(self, prod):
+        if len(prod.rhs) == 1 and prod.rhs[0] == 'EPSILON':
+            s = set()
+            s.add('EPSILON')
+            return s
+
+        ffirst = set()
+        for term in prod.rhs:
+            first = self.first_sets[term]
+            if 'EPSILON' not in first:
+                return first
+            self.merge(ffirst, first, 'EPSILON')
+        ffirst.add('EPSILON')
+        return ffirst
+
+    def gen_table(self):
+        for prod_key in self.productions:
+            for prod in self.productions[prod_key]:
+                first_set = self.first_of_prod_rhs(prod)
+                for term in first_set:
+                    if term in self.terminals:
+                        self.table[prod.lhs, term] = prod
+                if 'EPSILON' in first_set:
+                    follow_set = self.follow_sets[prod.lhs]
+                    for term in follow_set:
+                        self.table[prod.lhs, term] = prod
+                    if '$' in follow_set:
+                        self.table[prod.lhs, '$'] = prod
+
     @staticmethod
     def merge(to, from_, exclude=''):
         for x in from_:
             if x != exclude:
                 to.add(x)
+
+    @staticmethod
+    def production_contains_epsilon(production):
+        rhs_ = production.rhs
+        for term in rhs_:
+            if term == 'EPSILON':
+                return True
+        return False
