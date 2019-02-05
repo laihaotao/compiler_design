@@ -15,16 +15,23 @@ Y -> * T | ϵ
 
 class TestGrammar(unittest.TestCase):
 
+    def test_ll1_grammar(self):
+        file = '../grammar/non_ll1_grammar.txt'
+        grammar = tst.Grammar(file, 'E')
+        grammar.gen_table()
+        grammar.is_LL1()
+
     def test_gen_table1(self):
         file = '../grammar/simple_grammar3.txt'
         grammar = tst.Grammar(file, 'E')
         grammar.gen_table()
+        grammar.is_LL1()
 
     def test_gen_table2(self):
         file = '../grammar/simple_grammar1.txt'
         grammar = tst.Grammar(file, 'E')
         grammar.gen_table()
-        pass
+        grammar.is_LL1()
 
     def test_first_set(self):
         file = '../grammar/simple_grammar3.txt'

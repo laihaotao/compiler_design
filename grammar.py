@@ -24,6 +24,9 @@ class Grammar(object):
         self.first_sets   = {}
         self.follow_sets  = {}
         self.table        = {}
+        self.table_error  = {}
+
+        self.table_error['LL(1)'] = set()
         self._construct(file_path)
 
     def summary(self):
@@ -221,13 +224,28 @@ class Grammar(object):
                 first_set = self.first_of_prod_rhs(prod)
                 for term in first_set:
                     if term in self.terminals:
-                        self.table[prod.lhs, term] = prod
+                        self.table_entry_check(prod, term)
                 if 'EPSILON' in first_set:
                     follow_set = self.follow_sets[prod.lhs]
                     for term in follow_set:
-                        self.table[prod.lhs, term] = prod
+                        self.table_entry_check(prod, term)
                     if '$' in follow_set:
                         self.table[prod.lhs, '$'] = prod
+
+    def table_entry_check(self, prod, term):
+        if (prod.lhs, term) in self.table:
+            self.table_error['LL(1)'].add(prod)
+        else:
+            self.table[prod.lhs, term] = prod
+
+    def is_LL1(self):
+        if len(self.table_error['LL(1)']) == 0:
+            print('the grammar is LL(1) grammar')
+        else:
+            print('the grammar is NOT LL(1) grammar')
+            print('something wrong with the following productions')
+            for p in self.table_error['LL(1)']:
+                print(p)
 
     @staticmethod
     def merge(to, from_, exclude=''):
