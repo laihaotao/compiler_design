@@ -3,10 +3,14 @@ import re
 
 class Production(object):
 
-    def __init__(self, lhs, rhs):
+    def __init__(self, lhs, rhs, action):
         self.lhs = lhs
         self.rhs = rhs
         self.separator = '->'
+        if action is not None:
+            self.action = action
+        else:
+            self.action = None
 
     def __str__(self):
         return self.lhs + ' ' + self.separator + ' ' + str(self.rhs)
@@ -16,15 +20,16 @@ class Production(object):
 
 class Grammar(object):
 
-    def __init__(self, file_path, start_symbol):
+    def __init__(self, file_path, start_symbol, ending_symbol='$'):
         self.productions  = {}
         self.terminals    = set()
         self.nonterminals = set()
-        self.start_symbol = start_symbol
         self.first_sets   = {}
         self.follow_sets  = {}
         self.table        = {}
         self.table_error  = {}
+        self.start_symbol  = start_symbol
+        self.ending_symbol = ending_symbol
 
         self.table_error['LL(1)'] = set()
         self._construct(file_path)
@@ -53,9 +58,11 @@ class Grammar(object):
         print('*******************************')
 
     def _construct(self, file_path, debug=False):
+        action_pattern = re.compile(r'({[^{}\']*})')
         with open(file_path, 'r') as f:
             for line in f.readlines():
                 line = line.strip()
+                it = action_pattern.finditer(line)
                 # split the by the separator '->'
                 parts = re.split(r'\s+->\s+', line)
                 lhs_ = parts[0]
@@ -69,9 +76,17 @@ class Grammar(object):
                 # rhs may contains '|', for example: EPrime -> EPSILON | '+' T EPrime
                 prods = re.split(r'\s+\|\s+', rhs_)
                 for prod in prods:
+                    action = None
+                    aaction = action_pattern.findall(prod)
+                    if len(aaction) > 1:
+                        print('invalid semantic action format: {}'.format(prod))
+                        exit(1)
+                    elif len(aaction) == 1:
+                        action = aaction[0]
+                        s = prod.find(action)
+                        prod = prod[0:s].strip()
                     tmp = re.split(r'\s+', prod)
                     rhs__ = []
-
                     for term in tmp:
                         if term[0] == "'":
                             tmp_ = term[1:-1]
@@ -79,7 +94,7 @@ class Grammar(object):
                             rhs__.append(tmp_)
                         else:
                             rhs__.append(term)
-                    self._create_production(lhs_, rhs__)
+                    self._create_production(lhs_, rhs__, action)
 
         for t in self.terminals:
             self.first_of(t)
@@ -90,8 +105,11 @@ class Grammar(object):
         for nt in self.nonterminals:
             self.follow_of(nt)
 
-    def _create_production(self, nonterminal, rhs):
-        p = Production(nonterminal, rhs)
+    def _create_production(self, nonterminal, rhs, action):
+        if action is None:
+            p = Production(nonterminal, rhs, action)
+        else:
+            p = Production(nonterminal, rhs, action[1:-1])
         self.productions[nonterminal].append(p)
 
     def _add_nonterminal(self, nonterminal):
