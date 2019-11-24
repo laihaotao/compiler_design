@@ -3,6 +3,11 @@ import lex_rules
 import sys
 import os
 
+
+keywords_set    = set(lex_rules.reserved.values())
+operators_set   = set(lex_rules.operators_)
+punctuation_set = set(lex_rules.punctuation_)
+
 def get_lexer():
     return lex.lex(module=lex_rules)
 

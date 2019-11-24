@@ -19,15 +19,22 @@ reserved = {
     'main'    : 'MAIN'
 }
 
-tokens = (
-    'ID', 'FLOAT_VAL', 'INT_VAL',
+operators_ = (
     'PLUS', 'MINUS', 'TIMES', 'DIVIDE',
-    'LP', 'RP', 'LB', 'RB', 'LSB', 'RSB',
     'EQ', 'NEQ', 'LT', 'GT', 'LE', 'GE',
     'AND', 'OR', 'NOT',
-    'DOT', 'COLON', 'SEMICOL', 'SCOPE', 'COMMA',
-    'ASG'
-) + tuple(reserved.values())
+    'ASG',
+    'SCOPE'
+)
+
+punctuation_ = (
+    'DOT', 'COLON', 'SEMICOL', 'COMMA',
+    'LP', 'RP', 'LB', 'RB', 'LSB', 'RSB'
+)
+
+tokens = (
+    'ID', 'FLOAT_VAL', 'INT_VAL'
+) + tuple(reserved.values()) + punctuation_ + operators_
 
 t_EQ      = r'=='
 t_NEQ     = r'<>'

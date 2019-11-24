@@ -1,16 +1,12 @@
 import re
 
-
 class Production(object):
 
-    def __init__(self, lhs, rhs, action):
+    def __init__(self, lhs, rhs, sem_prod):
         self.lhs = lhs
         self.rhs = rhs
         self.separator = '->'
-        if action is not None:
-            self.action = action
-        else:
-            self.action = None
+        self.sem_prod = sem_prod
 
     def __str__(self):
         return self.lhs + ' ' + self.separator + ' ' + str(self.rhs)
@@ -21,7 +17,8 @@ class Production(object):
 class Grammar(object):
 
     def __init__(self, file_path, start_symbol, ending_symbol='$'):
-        self.productions  = {}
+        self.productions   = {}
+        self.action_prods  = {}
         self.terminals    = set()
         self.nonterminals = set()
         self.first_sets   = {}
@@ -58,11 +55,9 @@ class Grammar(object):
         print('*******************************')
 
     def _construct(self, file_path, debug=False):
-        action_pattern = re.compile(r'({[^{}\']*})')
         with open(file_path, 'r') as f:
             for line in f.readlines():
                 line = line.strip()
-                it = action_pattern.finditer(line)
                 # split the by the separator '->'
                 parts = re.split(r'\s+->\s+', line)
                 lhs_ = parts[0]
@@ -72,29 +67,28 @@ class Grammar(object):
                 # create an new entry for the new nonterminal, it will contains
                 # a list of productions leading with that nonterminal
                 self.productions[lhs_] = []
+                self.action_prods[lhs_] = []
 
                 # rhs may contains '|', for example: EPrime -> EPSILON | '+' T EPrime
                 prods = re.split(r'\s+\|\s+', rhs_)
                 for prod in prods:
-                    action = None
-                    aaction = action_pattern.findall(prod)
-                    if len(aaction) > 1:
-                        print('invalid semantic action format: {}'.format(prod))
-                        exit(1)
-                    elif len(aaction) == 1:
-                        action = aaction[0]
-                        s = prod.find(action)
-                        prod = prod[0:s].strip()
                     tmp = re.split(r'\s+', prod)
                     rhs__ = []
+                    act_rhs = []
                     for term in tmp:
-                        if term[0] == "'":
+                        # if it is an action
+                        if term[0] == '#':
+                            act_rhs.append(term)
+                        # if it is a terminal
+                        elif term[0] == "'":
                             tmp_ = term[1:-1]
                             self._add_terminal(tmp_)
                             rhs__.append(tmp_)
+                            act_rhs.append(tmp_)
                         else:
                             rhs__.append(term)
-                    self._create_production(lhs_, rhs__, action)
+                            act_rhs.append(term)
+                    self._create_production(lhs_, rhs__, act_rhs)
 
         for t in self.terminals:
             self.first_of(t)
@@ -105,11 +99,11 @@ class Grammar(object):
         for nt in self.nonterminals:
             self.follow_of(nt)
 
-    def _create_production(self, nonterminal, rhs, action):
-        if action is None:
-            p = Production(nonterminal, rhs, action)
-        else:
-            p = Production(nonterminal, rhs, action[1:-1])
+    def _create_production(self, nonterminal, rhs, act_rhs):
+        ap = Production(nonterminal, act_rhs, None)
+        self.action_prods[nonterminal].append(act_rhs)
+
+        p = Production(nonterminal, rhs, ap)
         self.productions[nonterminal].append(p)
 
     def _add_nonterminal(self, nonterminal):
@@ -151,6 +145,10 @@ class Grammar(object):
         return False
 
     def first_of(self, symbol):
+        # ignore action symbol
+        if symbol[0] == '#':
+            return
+
         if symbol in self.first_sets:
             return self.first_sets[symbol]
 
@@ -183,6 +181,10 @@ class Grammar(object):
         return first
 
     def follow_of(self, symbol):
+        # ignore action symbol
+        if symbol[0] == '#':
+            return
+
         if symbol in self.follow_sets:
             return self.follow_sets[symbol]
 

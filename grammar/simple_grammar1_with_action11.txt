@@ -1,0 +1,5 @@
+E           -> T EPrime
+EPrime      -> EPSILON | '+' T #_BI_PLUS EPrime
+T           -> F TPrime
+TPrime      -> EPSILON | '*' F #_BI_MUL TPrime
+F           -> '(' E ')' | #_INT '0' | #_INT '1' | #_INT '2'
